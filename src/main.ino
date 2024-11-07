@@ -34,6 +34,7 @@ bool displayOutdoor = false;           // Toggle display between indoor and outd
 
 void setup() {
   Serial.begin(115200);
+  pinMode(DHTPIN, INPUT_PULLUP);
   dht.begin();
   
   WiFi.mode(WIFI_OFF);
