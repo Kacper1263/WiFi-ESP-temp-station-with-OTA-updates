@@ -8,6 +8,11 @@
 #include <config.h> // contains WIFI_SSID and WIFI_PASS - create your own config.h from example file
 #include <ArduinoOTA.h>
 
+#include <SuplaDevice.h>
+#include <supla/sensor/DHT.h>
+#include <supla/network/esp_wifi.h>
+
+
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_ADDRESS 0x3C
@@ -15,6 +20,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASS;
+
+Supla::ESPWifi wifi(ssid, password);
 
 const String apiUrl = "https://greencity.pl/shipx-point-data/317/KRA357M/air_index_level";
 
@@ -36,12 +43,6 @@ void setup() {
   Serial.begin(115200);
   pinMode(DHTPIN, INPUT_PULLUP);
   dht.begin();
-  
-  WiFi.mode(WIFI_OFF);
-  if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
-  }
 
   display.clearDisplay();
   display.setTextSize(1);
@@ -49,58 +50,87 @@ void setup() {
   display.display();
   display.setCursor(0, 0);
   display.println("Starting...");
-  display.println("Connecting to WiFi...");
   display.display();
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  
+  // Replace the following GUID with value that you can retrieve from https://www.supla.org/arduino/get-guid
+  char GUID[SUPLA_GUID_SIZE] = {0x9E,0x69,0xD6,0xEB,0x14,0x90,0x45,0x4D,0xBD,0x9B,0x8C,0x18,0x80,0x6D,0x83,0x82};
 
-  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    displayError("Err. while connecting");
-    display.println("L:" + String(WIFI_SSID));
-    display.println("H:" + String(WIFI_PASS));
+  // Replace the following AUTHKEY with value that you can retrieve from: https://www.supla.org/arduino/get-authkey
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x1D,0x23,0xF1,0xC2,0xFE,0xC9,0xD2,0xD7,0x59,0xBD,0x03,0xBE,0xEB,0x1F,0x44,0xD3};
+
+  /*
+   * Having your device already registered at cloud.supla.org,
+   * you want to change CHANNEL sequence or remove any of them,
+   * then you must also remove the device itself from cloud.supla.org.
+   * Otherwise you will get "Channel conflict!" error.
+   */
+     
+  // CHANNEL0 - DHT22 Sensor
+  new Supla::Sensor::DHT(DHTPIN, DHTTYPE);
+
+  /*
+   * SuplaDevice Initialization.
+   * Server address is available at https://cloud.supla.org 
+   * If you do not have an account, you can create it at https://cloud.supla.org/account/create
+   * SUPLA and SUPLA CLOUD are free of charge
+   * 
+   */
+
+  SuplaDevice.begin(GUID,              // Global Unique Identifier 
+                    "svr32.supla.org ",  // SUPLA server address
+                    "marcinkiewicz.kacper@gmail.com",   // Email address used to login to Supla Cloud
+                    AUTHKEY); 
+
+  SuplaDevice.setAutomaticResetOnConnectionProblem(60); 
+  display.println("Supla initialized");
+  display.display();
+}
+bool otaReady = false;
+void loop() {
+  SuplaDevice.iterate();
+  if(WiFi.status() == WL_CONNECTED && !otaReady){
+    // OTA
+    ArduinoOTA.setPassword("wifi-temp-ota");
+    ArduinoOTA
+      .onStart([]() {
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.println("OTA update started");
+        display.display();
+      })
+      .onEnd([]() {
+        display.println("\nUpdate complete");
+        display.display();
+      })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        display.clearDisplay();
+        display.setCursor(0, 0);
+        display.println("OTA update started");
+        display.printf("Progress: %u%%\r", (progress / (total / 100)));
+        display.display();
+      })
+      .onError([](ota_error_t error) {
+        display.printf("Error[%u]: ", error);
+        if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+        else if (error == OTA_BEGIN_ERROR) {display.println("Begin Failed"); display.display();}
+        else if (error == OTA_CONNECT_ERROR) {display.println("Connect Failed"); display.display();}
+        else if (error == OTA_RECEIVE_ERROR) {display.println("Receive Failed"); display.display();}
+        else if (error == OTA_END_ERROR) {display.println("End Failed"); display.display();}
+      });
+    ArduinoOTA.begin();
+    otaReady = true;
+
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println("WiFi and OTA ready");
     display.display();
-    WiFi.disconnect(true);
-    delay(5000);
-    return;
+    delay(2000);
   }
 
-  display.println(WiFi.localIP());
-  display.display();
-
-  // OTA
-  ArduinoOTA.setPassword("wifi-temp-ota");
-  ArduinoOTA
-    .onStart([]() {
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("OTA update started");
-      display.display();
-    })
-    .onEnd([]() {
-      display.println("\nUpdate complete");
-      display.display();
-    })
-    .onProgress([](unsigned int progress, unsigned int total) {
-      display.clearDisplay();
-      display.setCursor(0, 0);
-      display.println("OTA update started");
-      display.printf("Progress: %u%%\r", (progress / (total / 100)));
-      display.display();
-    })
-    .onError([](ota_error_t error) {
-      display.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) {display.println("Begin Failed"); display.display();}
-      else if (error == OTA_CONNECT_ERROR) {display.println("Connect Failed"); display.display();}
-      else if (error == OTA_RECEIVE_ERROR) {display.println("Receive Failed"); display.display();}
-      else if (error == OTA_END_ERROR) {display.println("End Failed"); display.display();}
-    });
-  ArduinoOTA.begin();
-}
-
-void loop() {
-  ArduinoOTA.handle();
+  if(otaReady){
+    ArduinoOTA.handle();
+  }
   unsigned long currentMillis = millis();
 
   // Fetch API data every 5 minutes
@@ -145,12 +175,7 @@ void loop() {
 void fetchWeatherData() {
   // check is wifi connected
   if (WiFi.status() != WL_CONNECTED) {
-    // try to reconnect
-    WiFi.reconnect();
-    if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-      displayError("WiFi connection error");
-      return;
-    }
+    return;
   }
 
   // show fetching message on first run
