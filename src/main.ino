@@ -1,17 +1,26 @@
 #include <Arduino.h>
-#include <WiFi.h>
 #include <HTTPClient.h>
 #include <Arduino_JSON.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <DHT.h>
+//#include <DHT.h>
 #include <config.h> // contains WIFI_SSID and WIFI_PASS - create your own config.h from example file
 #include <ArduinoOTA.h>
 
+// Supla
 #include <SuplaDevice.h>
-#include <supla/sensor/DHT.h>
 #include <supla/network/esp_wifi.h>
-
+#include <supla/device/status_led.h>
+#include <supla/storage/littlefs_config.h>
+#include <supla/network/esp_web_server.h>
+#include <supla/network/html/device_info.h>
+#include <supla/network/html/protocol_parameters.h>
+#include <supla/network/html/status_led_parameters.h>
+#include <supla/network/html/wifi_parameters.h>
+#include <supla/device/supla_ca_cert.h>
+#include <supla/sensor/general_purpose_measurement.h>
+#include <supla/sensor/virtual_thermometer.h>
+#include <supla/sensor/DHT.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -21,13 +30,10 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASS;
 
-Supla::ESPWifi wifi(ssid, password);
-
 const String apiUrl = "https://greencity.pl/shipx-point-data/317/KRA357M/air_index_level";
 
 #define DHTPIN 4      // Define the pin connected to the DHT sensor
 #define DHTTYPE DHT22 // Define sensor type (DHT22)
-DHT dht(DHTPIN, DHTTYPE);
 
 float lastTemperature = -1, lastHumidity = -1, lastPM25Percent = -1, lastPM10Percent = -1, lastPressure = -1;
 String lastQuality = "";
@@ -35,14 +41,36 @@ float indoorTemperature = -1, indoorHumidity = -1;
 
 unsigned long previousAPIMillis = 0, previousDHTMillis = 0, previousDisplayMillis = 0;
 const long apiInterval = 300000;      // 5 minutes in milliseconds
-const long dhtInterval = 5000;        // 5 seconds in milliseconds
+const long dhtInterval = 1000;        // 5 seconds in milliseconds
 const long displayInterval = 5000;    // 5 seconds display switch interval
 bool displayOutdoor = false;           // Toggle display between indoor and outdoor
+
+bool wifiError = false;
+
+#pragma region Supla
+Supla::ESPWifi wifi;
+Supla::LittleFsConfig configSupla;
+
+Supla::Device::StatusLed statusLed(LED_BUILTIN, false); 
+Supla::EspWebServer suplaServer;
+
+// HTML www component (they appear in sections according to creation sequence)
+Supla::Html::DeviceInfo htmlDeviceInfo(&SuplaDevice);
+Supla::Html::WifiParameters htmlWifi;
+Supla::Html::ProtocolParameters htmlProto;
+Supla::Html::StatusLedParameters htmlStatusLed;
+
+Supla::Sensor::DHT *dht = nullptr;
+Supla::Sensor::VirtualThermometer *apiTemp = nullptr;
+Supla::Sensor::GeneralPurposeMeasurement *apiHumi = nullptr;
+Supla::Sensor::GeneralPurposeMeasurement *apiPM25 = nullptr;
+Supla::Sensor::GeneralPurposeMeasurement *apiPM10 = nullptr;
+Supla::Sensor::GeneralPurposeMeasurement *apiPres = nullptr;
+#pragma endregion
 
 void setup() {
   Serial.begin(115200);
   pinMode(DHTPIN, INPUT_PULLUP);
-  dht.begin();
 
   display.clearDisplay();
   display.setTextSize(1);
@@ -52,41 +80,52 @@ void setup() {
   display.println("Starting...");
   display.display();
 
-  
-  // Replace the following GUID with value that you can retrieve from https://www.supla.org/arduino/get-guid
-  char GUID[SUPLA_GUID_SIZE] = {0x9E,0x69,0xD6,0xEB,0x14,0x90,0x45,0x4D,0xBD,0x9B,0x8C,0x18,0x80,0x6D,0x83,0x82};
+  dht = new Supla::Sensor::DHT(DHTPIN, DHTTYPE);
+  apiTemp = new Supla::Sensor::VirtualThermometer();
+  apiHumi = new Supla::Sensor::GeneralPurposeMeasurement();
+  apiPM25 = new Supla::Sensor::GeneralPurposeMeasurement();
+  apiPM10 = new Supla::Sensor::GeneralPurposeMeasurement();
+  apiPres = new Supla::Sensor::GeneralPurposeMeasurement();
 
-  // Replace the following AUTHKEY with value that you can retrieve from: https://www.supla.org/arduino/get-authkey
-  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x1D,0x23,0xF1,0xC2,0xFE,0xC9,0xD2,0xD7,0x59,0xBD,0x03,0xBE,0xEB,0x1F,0x44,0xD3};
+#pragma region Supla default setup
+  apiHumi->setDefaultValueDivider(0);
+  apiHumi->setDefaultValueMultiplier(0);
+  apiHumi->setDefaultValueAdded(0);
+  apiHumi->setDefaultValuePrecision(2);
+  apiPM25->setDefaultValueDivider(0);
+  apiPM25->setDefaultValueMultiplier(0);
+  apiPM25->setDefaultValueAdded(0);
+  apiPM25->setDefaultValuePrecision(2);
+  apiPM10->setDefaultValueDivider(0);
+  apiPM10->setDefaultValueMultiplier(0);
+  apiPM10->setDefaultValueAdded(0);
+  apiPM10->setDefaultValuePrecision(2);
+  apiPres->setDefaultValueDivider(0);
+  apiPres->setDefaultValueMultiplier(0);
+  apiPres->setDefaultValueAdded(0);
+  apiPres->setDefaultValuePrecision(2);
 
-  /*
-   * Having your device already registered at cloud.supla.org,
-   * you want to change CHANNEL sequence or remove any of them,
-   * then you must also remove the device itself from cloud.supla.org.
-   * Otherwise you will get "Channel conflict!" error.
-   */
-     
-  // CHANNEL0 - DHT22 Sensor
-  new Supla::Sensor::DHT(DHTPIN, DHTTYPE);
+  apiTemp->setValue(-1);
+  apiHumi->setValue(-1);
+  apiPM25->setValue(-1);
+  apiPM10->setValue(-1);
+  apiPres->setValue(-1);
+#pragma endregion
 
-  /*
-   * SuplaDevice Initialization.
-   * Server address is available at https://cloud.supla.org 
-   * If you do not have an account, you can create it at https://cloud.supla.org/account/create
-   * SUPLA and SUPLA CLOUD are free of charge
-   * 
-   */
-
-  SuplaDevice.begin(GUID,              // Global Unique Identifier 
-                    "svr32.supla.org ",  // SUPLA server address
-                    "marcinkiewicz.kacper@gmail.com",   // Email address used to login to Supla Cloud
-                    AUTHKEY); 
-
-  SuplaDevice.setAutomaticResetOnConnectionProblem(60); 
-  display.println("Supla initialized");
+  display.println("Supla configured");
   display.display();
+
+  SuplaDevice.setSuplaCACert(suplaCACert);
+  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
+
+  SuplaDevice.setAutomaticResetOnConnectionProblem(60);
+  SuplaDevice.begin();
+
+  delay(2000);
 }
+
 bool otaReady = false;
+
 void loop() {
   SuplaDevice.iterate();
   if(WiFi.status() == WL_CONNECTED && !otaReady){
@@ -124,13 +163,16 @@ void loop() {
     display.clearDisplay();
     display.setCursor(0, 0);
     display.println("WiFi and OTA ready");
+    display.println(WiFi.localIP());
     display.display();
-    delay(2000);
+    delay(5000);
   }
 
   if(otaReady){
     ArduinoOTA.handle();
   }
+
+
   unsigned long currentMillis = millis();
 
   // Fetch API data every 5 minutes
@@ -139,18 +181,10 @@ void loop() {
     previousAPIMillis = currentMillis;
   }
 
-  // Read DHT22 sensor data every 5 seconds
+  // Read DHT22 sensor data every 1 second
   if (currentMillis - previousDHTMillis >= dhtInterval || previousDHTMillis == 0) {
-    // wait 2s on first run to let the sensor initialize
-    if (previousDHTMillis == 0) {
-      // print initializing message
-      display.println("Initializing sensor..");
-      display.display();
-      delay(2000);
-    }
-
-    indoorTemperature = dht.readTemperature();
-    indoorHumidity = dht.readHumidity();
+    indoorTemperature = dht->getTemp();
+    indoorHumidity = dht->getHumi();
     Serial.print("Indoor Temperature: ");
     Serial.print(indoorTemperature);
     Serial.print("°C, Indoor Humidity: ");
@@ -175,13 +209,9 @@ void loop() {
 void fetchWeatherData() {
   // check is wifi connected
   if (WiFi.status() != WL_CONNECTED) {
+    lastQuality = "DISCONNECTED"; // set quality to disconnected - this will be displayed on the screen every 5 seconds
+    displayError("WiFi connection error");
     return;
-  }
-
-  // show fetching message on first run
-  if(previousAPIMillis == 0){
-    display.println("Fetching data...");
-    display.display();
   }
 
   HTTPClient http;
@@ -207,6 +237,13 @@ void fetchWeatherData() {
       } else {
         Serial.println("Air Index Level is not available.");
       }
+
+      // Set Supla sensors values
+      apiTemp->setValue(lastTemperature);
+      apiHumi->setValue(lastHumidity);
+      apiPM25->setValue(lastPM25Percent);
+      apiPM10->setValue(lastPM10Percent);
+      apiPres->setValue(lastPressure);
     }
   } else {
     displayError("API request error");
