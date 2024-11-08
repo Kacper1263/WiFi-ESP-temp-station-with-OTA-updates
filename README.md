@@ -1,6 +1,8 @@
-# WiFi Weather Station with OTA Updates
+# WiFi Weather Station with OTA Updates + Supla Cloud integration
 
 This project is a WiFi-enabled ESP32 weather station that displays indoor and outdoor temperature and humidity, as well as outdoor air quality (PM2.5 and PM10) and pressure. The ESP32 fetches outdoor data from a local air quality station near my location and displays it on an OLED screen. The device also supports OTA (Over-The-Air) updates, making it easy to deploy updates without requiring a physical connection.
+
+> **NOTE**: I had problems building this branch (Supla) with PlatformIO, so I recommend using Arduino IDE for this branch.
 
 ## Features
 
@@ -9,6 +11,7 @@ This project is a WiFi-enabled ESP32 weather station that displays indoor and ou
 - **Indoor Temperature and Humidity**: Reads data from a DHT22 sensor.
 - **Outdoor Data**: Fetches temperature, humidity, PM2.5, PM10 levels, and air pressure from a local air quality station.
 - **OLED Display**: Displays data on a 128x64 OLED screen, alternating between indoor and outdoor data every 5 seconds.
+- **Supla Integration**: Sends indoor temperature/humidity and API data to the Supla cloud platform.
 
 ## Libraries Used
 
@@ -18,6 +21,7 @@ This project is a WiFi-enabled ESP32 weather station that displays indoor and ou
 - **Adafruit_SSD1306**: For controlling the OLED screen.
 - **DHT.h**: For interfacing with the DHT22 temperature and humidity sensor.
 - **ArduinoOTA**: For enabling OTA updates.
+- **SuplaDevice.h**: For sending data to the Supla cloud platform - [supla-device repo](https://github.com/SUPLA/supla-device/)
 
 ## Hardware Requirements
 
@@ -36,7 +40,8 @@ To use this project, you need to create a `config.h` file in the project directo
 2. **Install the required libraries** (listed above).
 3. **Create the `config.h` file** with your WiFi credentials as described in the Configuration section.
 4. **Upload the code to your ESP32** using the Arduino IDE or VS Code with PlatformIO.
-5. **View data on the OLED screen** once the ESP32 connects to your WiFi network and retrieves weather data.
+5. 🟢**SUPLA CONFIGURATION**🟢: If you didn't configured Supla yet on this device, it will start in configuration mode. Connect to the WiFi network named something like "SUPLA-ESP...", open your browser and go to `192.168.4.1` and then, follow the instructions on the website. Configuration will be saved in device memory and will be used on next boot.
+6. **View data on the OLED screen** once the ESP32 connects to your WiFi network and retrieves weather data.
 
 ## OTA (Over-The-Air) Updates
 
@@ -47,21 +52,21 @@ Arduino IDE:
 2. In the Arduino IDE, select the ESP32's IP address from the **Port** menu.
 3. **Upload** new firmware directly over WiFi.
 
-VS Code with PlatformIO:
-1. Connect the ESP32 to your WiFi network - WiFi network must be the same as your computer's network.
-2. Change the `upload_port` in the `platformio.ini` file to the ESP32's IP address (displayed on startup on the OLED screen).
-3. **Upload** new firmware using the PlatformIO upload button with OTA environment selected.
+~~VS Code with PlatformIO:~~
+1. ~~Connect the ESP32 to your WiFi network - WiFi network must be the same as your computer's network.~~
+2. ~~Change the `upload_port` in the `platformio.ini` file to the ESP32's IP address (displayed on startup on the OLED screen).~~
+3. ~~**Upload** new firmware using the PlatformIO upload button with OTA environment selected.~~
 
 
 During an OTA update, progress is displayed on the OLED screen, and normal operation resumes after the update completes.
 
 ## Functionality Overview
 
-- **Setup**: Initializes the WiFi, OLED display, DHT sensor, and OTA.
+- **Setup**: Initializes the WiFi, OLED display, DHT sensor, and Supla.
 - **Loop**: 
   - **OTA Handling**: Checks for OTA updates.
   - **Weather Data Fetching**: Calls `fetchWeatherData()` every 5 minutes to get updated outdoor data.
-  - **DHT Sensor Reading**: Reads indoor temperature and humidity every 5 seconds.
+  - **DHT Sensor Reading**: Reads indoor temperature and humidity every 1 second from Supla DHT.
   - **Display Toggle**: Switches between indoor and outdoor data every 5 seconds.
 
 ## API Endpoint
