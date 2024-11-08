@@ -32,9 +32,12 @@ const long dhtInterval = 5000;        // 5 seconds in milliseconds
 const long displayInterval = 5000;    // 5 seconds display switch interval
 bool displayOutdoor = false;           // Toggle display between indoor and outdoor
 
+bool wifiError = false;
+
 void setup() {
   Serial.begin(115200);
   pinMode(DHTPIN, INPUT_PULLUP);
+  pinMode(BUILTIN_LED, OUTPUT);
   dht.begin();
   
   WiFi.mode(WIFI_OFF);
@@ -102,6 +105,13 @@ void setup() {
 void loop() {
   ArduinoOTA.handle();
   unsigned long currentMillis = millis();
+
+  if(WiFi.status() != WL_CONNECTED) {
+    digitalWrite(BUILTIN_LED, HIGH);
+  }
+  else {
+    digitalWrite(BUILTIN_LED, LOW);
+  }
 
   // Fetch API data every 5 minutes
   if (currentMillis - previousAPIMillis >= apiInterval || previousAPIMillis == 0) {
