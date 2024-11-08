@@ -2,6 +2,8 @@
 
 This project is a WiFi-enabled ESP32 weather station that displays indoor and outdoor temperature and humidity, as well as outdoor air quality (PM2.5 and PM10) and pressure. The ESP32 fetches outdoor data from a local air quality station near my location and displays it on an OLED screen. The device also supports OTA (Over-The-Air) updates, making it easy to deploy updates without requiring a physical connection.
 
+> **Note**: There is also version with Supla integration! Checkout supla branch [here](https://github.com/Kacper1263/WiFi-ESP-temp-station-with-OTA-updates/tree/supla)
+
 ## Features
 
 - **WiFi Connectivity**: Connects to a WiFi network using credentials stored in a separate `config.h` file.
