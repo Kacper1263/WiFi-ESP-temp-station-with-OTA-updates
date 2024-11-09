@@ -3,8 +3,6 @@
 #include <Arduino_JSON.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-//#include <DHT.h>
-#include <config.h> // contains WIFI_SSID and WIFI_PASS - create your own config.h from example file
 #include <ArduinoOTA.h>
 
 // Supla
@@ -21,15 +19,7 @@
 #include <supla/sensor/general_purpose_measurement.h>
 #include <supla/sensor/virtual_thermometer.h>
 #include <supla/sensor/DHT.h>
-#include <supla/control/button.h>
 
-#define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64
-#define OLED_ADDRESS 0x3C
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-
-const char* ssid = WIFI_SSID;
-const char* password = WIFI_PASS;
 
 const String apiUrl = "https://greencity.pl/shipx-point-data/317/KRA357M/air_index_level";
 
@@ -69,6 +59,11 @@ Supla::Sensor::GeneralPurposeMeasurement *apiPM10 = nullptr;
 Supla::Sensor::GeneralPurposeMeasurement *apiPres = nullptr;
 #pragma endregion
 
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+#define OLED_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
 void setup() {
   Serial.begin(115200);
   pinMode(DHTPIN, INPUT_PULLUP);
@@ -85,9 +80,6 @@ void setup() {
   display.println("Starting...");
   display.display();
 
-  auto cfgBtn = Supla::Control::Button(32 , true, true);
-  cfgBtn.configureAsConfigButton(&SuplaDevice);
-
   dht = new Supla::Sensor::DHT(DHTPIN, DHTTYPE);
   apiTemp = new Supla::Sensor::VirtualThermometer();
   apiHumi = new Supla::Sensor::GeneralPurposeMeasurement();
@@ -100,22 +92,22 @@ void setup() {
   apiHumi->setDefaultValueMultiplier(0);
   apiHumi->setDefaultValueAdded(0);
   apiHumi->setDefaultValuePrecision(2);
-  apiHumi->setUnitAfterValue("%");
+  apiHumi->setDefaultUnitAfterValue("%");
   apiPM25->setDefaultValueDivider(0);
   apiPM25->setDefaultValueMultiplier(0);
   apiPM25->setDefaultValueAdded(0);
   apiPM25->setDefaultValuePrecision(2);
-  apiPM25->setUnitAfterValue("%");
+  apiPM25->setDefaultUnitAfterValue("%");
   apiPM10->setDefaultValueDivider(0);
   apiPM10->setDefaultValueMultiplier(0);
   apiPM10->setDefaultValueAdded(0);
   apiPM10->setDefaultValuePrecision(2);
-  apiPM10->setUnitAfterValue("%");
+  apiPM10->setDefaultUnitAfterValue("%");
   apiPres->setDefaultValueDivider(0);
   apiPres->setDefaultValueMultiplier(0);
   apiPres->setDefaultValueAdded(0);
   apiPres->setDefaultValuePrecision(2);
-  apiPres->setUnitAfterValue("hPa");
+  apiPres->setDefaultUnitAfterValue("hPa");
 
   apiTemp->setValue(-1);
   apiHumi->setValue(-2);
@@ -132,8 +124,6 @@ void setup() {
 
   SuplaDevice.setAutomaticResetOnConnectionProblem(60*5);
   SuplaDevice.begin();
-
-  delay(2000);
 }
 
 bool otaReady = false;
@@ -189,8 +179,8 @@ void loop() {
 
   // Fetch API data every 5 minutes
   if (currentMillis - previousAPIMillis >= apiInterval || previousAPIMillis == 0) {
-    fetchWeatherData();
     previousAPIMillis = currentMillis;
+    fetchWeatherData();
   }
 
   // Read DHT22 sensor data every 1 second
@@ -220,7 +210,7 @@ void loop() {
 
 void fetchWeatherData() {
   // check is wifi connected
-  if (WiFi.status() != WL_CONNECTED) {
+  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
     lastQuality = "DISCONNECTED"; // set quality to disconnected - this will be displayed on the screen every 5 seconds
     previousAPIMillis = 0; // reset the timer to fetch data again
     return;
