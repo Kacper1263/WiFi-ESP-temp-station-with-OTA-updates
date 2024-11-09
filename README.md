@@ -29,11 +29,6 @@ This project is a WiFi-enabled ESP32 weather station that displays indoor and ou
 - **DHT22 Sensor**: Measures indoor temperature and humidity.
 - **128x64 OLED Display**: Displays weather data.
 
-## Configuration
-
-To use this project, you need to create a `config.h` file in the project directory. This file should contain your WiFi SSID and password.
-
-
 ## Installation and Usage
 
 1. **Clone this repository**.
