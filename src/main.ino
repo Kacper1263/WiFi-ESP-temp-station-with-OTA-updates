@@ -21,6 +21,7 @@
 #include <supla/sensor/general_purpose_measurement.h>
 #include <supla/sensor/virtual_thermometer.h>
 #include <supla/sensor/DHT.h>
+#include <supla/control/button.h>
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -51,7 +52,7 @@ bool wifiError = false;
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;
 
-Supla::Device::StatusLed statusLed(LED_BUILTIN, false); 
+Supla::Device::StatusLed statusLed(2, false); 
 Supla::EspWebServer suplaServer;
 
 // HTML www component (they appear in sections according to creation sequence)
@@ -72,6 +73,10 @@ void setup() {
   Serial.begin(115200);
   pinMode(DHTPIN, INPUT_PULLUP);
 
+  if(!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -79,6 +84,9 @@ void setup() {
   display.setCursor(0, 0);
   display.println("Starting...");
   display.display();
+
+  auto cfgBtn = Supla::Control::Button(32 , true, true);
+  cfgBtn.configureAsConfigButton(&SuplaDevice);
 
   dht = new Supla::Sensor::DHT(DHTPIN, DHTTYPE);
   apiTemp = new Supla::Sensor::VirtualThermometer();
@@ -92,24 +100,28 @@ void setup() {
   apiHumi->setDefaultValueMultiplier(0);
   apiHumi->setDefaultValueAdded(0);
   apiHumi->setDefaultValuePrecision(2);
+  apiHumi->setUnitAfterValue("%");
   apiPM25->setDefaultValueDivider(0);
   apiPM25->setDefaultValueMultiplier(0);
   apiPM25->setDefaultValueAdded(0);
   apiPM25->setDefaultValuePrecision(2);
+  apiPM25->setUnitAfterValue("%");
   apiPM10->setDefaultValueDivider(0);
   apiPM10->setDefaultValueMultiplier(0);
   apiPM10->setDefaultValueAdded(0);
   apiPM10->setDefaultValuePrecision(2);
+  apiPM10->setUnitAfterValue("%");
   apiPres->setDefaultValueDivider(0);
   apiPres->setDefaultValueMultiplier(0);
   apiPres->setDefaultValueAdded(0);
   apiPres->setDefaultValuePrecision(2);
+  apiPres->setUnitAfterValue("hPa");
 
   apiTemp->setValue(-1);
-  apiHumi->setValue(-1);
-  apiPM25->setValue(-1);
-  apiPM10->setValue(-1);
-  apiPres->setValue(-1);
+  apiHumi->setValue(-2);
+  apiPM25->setValue(-3);
+  apiPM10->setValue(-4);
+  apiPres->setValue(-5);
 #pragma endregion
 
   display.println("Supla configured");
@@ -118,7 +130,7 @@ void setup() {
   SuplaDevice.setSuplaCACert(suplaCACert);
   SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
-  SuplaDevice.setAutomaticResetOnConnectionProblem(60);
+  SuplaDevice.setAutomaticResetOnConnectionProblem(60*5);
   SuplaDevice.begin();
 
   delay(2000);
@@ -210,7 +222,7 @@ void fetchWeatherData() {
   // check is wifi connected
   if (WiFi.status() != WL_CONNECTED) {
     lastQuality = "DISCONNECTED"; // set quality to disconnected - this will be displayed on the screen every 5 seconds
-    displayError("WiFi connection error");
+    previousAPIMillis = 0; // reset the timer to fetch data again
     return;
   }
 
@@ -290,7 +302,12 @@ void displayWeatherData(String source, float temperature, float humidity, float 
   display.print(source);
   if (source == "Outdoor") {
     display.print(": ");
-    display.print(quality);
+    if(SuplaDevice.getDeviceMode() == Supla::DEVICE_MODE_CONFIG){
+      display.print("CONFIG MODE");
+    }
+    else{
+      display.print(quality);
+    }
   }
   yPos += lineSpacing;
 
