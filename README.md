@@ -33,11 +33,10 @@ This project is a WiFi-enabled ESP32 weather station that displays indoor and ou
 
 1. **Clone this repository**.
 2. **Install the required libraries** (listed above).
-3. **Create the `config.h` file** with your WiFi credentials as described in the Configuration section.
-4. **Upload the code to your ESP32** using the Arduino IDE or VS Code with PlatformIO.
-5. 🟢**SUPLA CONFIGURATION**🟢: If you didn't configured Supla yet on this device, it will start in configuration mode. Connect to the WiFi network named something like "SUPLA-ESP...", open your browser and go to `192.168.4.1` and then, follow the instructions on the website. Configuration will be saved in device memory and will be used on next boot.<br/><br/>**BEFORE SAVING** configuration, make sure you have enabled adding new devices in you Supla cloud panel. You can also view your server address on Supla cloud panel
-6. **View data on the OLED screen** once the ESP32 connects to your WiFi network and retrieves weather data.
-7. Now you should see all data on the OLED and also in Supla App.
+3. **Upload the code to your ESP32** using the Arduino IDE or VS Code with PlatformIO.
+4. 🟢**SUPLA CONFIGURATION**🟢: If you didn't configured Supla yet on this device, it will start in configuration mode. Connect to the WiFi network named something like "SUPLA-ESP...", open your browser and go to `192.168.4.1` and then, follow the instructions on the website. Configuration will be saved in device memory and will be used on next boot.<br/><br/>**BEFORE SAVING** configuration, make sure you have enabled adding new devices in you Supla cloud panel. You can also view your server address on Supla cloud panel
+5. **View data on the OLED screen** once the ESP32 connects to your WiFi network and retrieves weather data.
+6. Now you should see all data on the OLED and also in Supla App.
 
 ## OTA (Over-The-Air) Updates
 
