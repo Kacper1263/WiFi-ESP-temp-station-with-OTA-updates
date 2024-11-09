@@ -48,7 +48,7 @@ Arduino IDE:
 3. **Upload** new firmware directly over WiFi.
 
 VS Code with PlatformIO:
-1. ~onnect the ESP32 to your WiFi network - WiFi network must be the same as your computer's network.
+1. Connect the ESP32 to your WiFi network - WiFi network must be the same as your computer's network.
 2. Change the `upload_port` in the `platformio.ini` file to the ESP32's IP address (displayed on startup on the OLED screen).
 3. **Upload** new firmware using the PlatformIO upload button with OTA environment selected.
 
