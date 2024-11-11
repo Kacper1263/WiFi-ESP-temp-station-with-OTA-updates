@@ -13,6 +13,12 @@
 #define OLED_ADDRESS 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
+const bool flipDisplay = true;
+unsigned long lastDisplayModeChange = 0;
+bool isInvertedDisplay = false;
+const unsigned long displayInvertInterval = 60 * 60 * 1000; 
+const unsigned long displayInvertDuration = 5 * 60 * 1000; 
+
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASS;
 
@@ -112,6 +118,18 @@ void loop() {
   else {
     digitalWrite(BUILTIN_LED, LOW);
   }
+
+  // flip screen to prevent burn-in
+  if(flipDisplay){
+    if ((currentMillis - lastDisplayModeChange) >= displayInvertInterval + displayInvertDuration) {
+      display.invertDisplay(true);
+      isInvertedDisplay = true;
+      lastDisplayModeChange = currentMillis;
+    } else if (isInvertedDisplay && (currentMillis - lastDisplayModeChange) >= displayInvertDuration) {
+      display.invertDisplay(false);
+      isInvertedDisplay = false;
+    }
+  } 
 
   // Fetch API data every 5 minutes
   if (currentMillis - previousAPIMillis >= apiInterval || previousAPIMillis == 0) {
