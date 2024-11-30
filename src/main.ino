@@ -176,6 +176,11 @@ void loop() {
     ArduinoOTA.begin();
     otaReady = true;
 
+    // for sure
+    screenOn = true;
+    lastScreenTimeout = millis();
+    display.ssd1306_command(SSD1306_DISPLAYON);
+
     display.clearDisplay();
     display.setCursor(0, 0);
     display.println("WiFi and OTA ready");
