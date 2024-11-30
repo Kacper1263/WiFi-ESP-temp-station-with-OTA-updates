@@ -28,6 +28,12 @@ const String apiUrl = "https://greencity.pl/shipx-point-data/317/KRA357M/air_ind
 #define DHTTYPE DHT22 // Define sensor type (DHT22)
 DHT dht(DHTPIN, DHTTYPE);
 
+#define BTN_PIN 25
+
+const long screenTimeout = 20000; // turn off display after 20 seconds - set 0 to disable
+long lastScreenTimeout = 0; 
+bool screenOn = true;
+
 float lastTemperature = -1, lastHumidity = -1, lastPM25Percent = -1, lastPM10Percent = -1, lastPressure = -1;
 String lastQuality = "";
 float indoorTemperature = -1, indoorHumidity = -1;
@@ -43,6 +49,7 @@ bool wifiError = false;
 void setup() {
   Serial.begin(115200);
   pinMode(DHTPIN, INPUT_PULLUP);
+  pinMode(BTN_PIN, INPUT_PULLUP);
   pinMode(BUILTIN_LED, OUTPUT);
   dht.begin();
   
@@ -118,6 +125,26 @@ void loop() {
   else {
     digitalWrite(BUILTIN_LED, LOW);
   }
+
+  // Turn off display after screenTimeout - if enabled
+  if (screenTimeout > 0 && screenOn && currentMillis - lastScreenTimeout >= screenTimeout) {
+    screenOn = false;
+  }
+  if(screenOn == false){
+    display.ssd1306_command(SSD1306_DISPLAYOFF);
+  }
+  // if screen is off, check if button is pressed to turn it back on
+  if(screenOn == false && digitalRead(BTN_PIN) == LOW){
+    screenOn = true;
+    lastScreenTimeout = currentMillis;
+    display.ssd1306_command(SSD1306_DISPLAYON);
+  }
+  // if screen is on and button is pressed, reset the screen timeout
+  if(screenOn && digitalRead(BTN_PIN) == LOW){
+    lastScreenTimeout = currentMillis;
+  }
+
+
 
   // flip screen to prevent burn-in
   if(flipDisplay){
