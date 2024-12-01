@@ -88,6 +88,8 @@ void setup() {
   ArduinoOTA.setPassword("wifi-temp-ota");
   ArduinoOTA
     .onStart([]() {
+      screenOn = true;
+      display.ssd1306_command(SSD1306_DISPLAYON);
       display.clearDisplay();
       display.setCursor(0, 0);
       display.println("OTA update started");
@@ -98,6 +100,8 @@ void setup() {
       display.display();
     })
     .onProgress([](unsigned int progress, unsigned int total) {
+      screenOn = true;
+      display.ssd1306_command(SSD1306_DISPLAYON);
       display.clearDisplay();
       display.setCursor(0, 0);
       display.println("OTA update started");
