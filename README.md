@@ -1,4 +1,7 @@
 # WiFi Weather Station with OTA Updates
+<img src="https://github.com/user-attachments/assets/5c393c60-5b99-4337-8ae6-545e63cfdd25" width="500">
+<img src="https://github.com/user-attachments/assets/310d6239-dcaf-4f1d-b1f1-cf025481b198" width="500">
+
 
 This project is a WiFi-enabled ESP32 weather station that displays indoor and outdoor temperature and humidity, as well as outdoor air quality (PM2.5 and PM10) and pressure. The ESP32 fetches outdoor data from a local air quality station near my location and displays it on an OLED screen. The device also supports OTA (Over-The-Air) updates, making it easy to deploy updates without requiring a physical connection.
 
