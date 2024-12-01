@@ -1,6 +1,7 @@
 # WiFi Weather Station with OTA Updates + Supla Cloud integration
 <img src="https://github.com/user-attachments/assets/5c393c60-5b99-4337-8ae6-545e63cfdd25" width="500">
 <img src="https://github.com/user-attachments/assets/310d6239-dcaf-4f1d-b1f1-cf025481b198" width="500">
+<br />
 <img src="https://github.com/user-attachments/assets/5214baf5-7e60-45bc-b07e-905972836e36" height="500">
 <img src="https://github.com/user-attachments/assets/90701727-dd4a-48a8-aab6-b788ed2e8f2a" height="500">
 
