@@ -213,12 +213,12 @@ void loop() {
     lastScreenTimeout = currentMillis;
     display.ssd1306_command(SSD1306_DISPLAYON);
   }
-  // if screen is on and button is pressed, reset the screen timeout
+  // if screen is on and button is pressed, reset the screen timeout and change displayOutdoor value
   if(screenOn && digitalRead(BTN_PIN) == LOW){
     lastScreenTimeout = currentMillis;
+    changeScreenMode(currentMillis);
+    delay(500); // debounce
   }
-
-
 
   // flip screen to prevent burn-in
   if(flipDisplay){
@@ -252,7 +252,12 @@ void loop() {
 
   // Switch display between indoor and outdoor data every 5 seconds
   if (currentMillis - previousDisplayMillis >= displayInterval || previousDisplayMillis == 0) {
-    displayOutdoor = !displayOutdoor;
+    changeScreenMode(currentMillis);
+  }
+}
+
+void changeScreenMode(unsigned long currentMillis) {
+  displayOutdoor = !displayOutdoor;
 
     if (displayOutdoor) {
       displayWeatherData("Outdoor", lastTemperature, lastHumidity, lastPM25Percent, lastPM10Percent, lastPressure, lastQuality);
@@ -260,7 +265,6 @@ void loop() {
       displayWeatherData("Indoor", indoorTemperature, indoorHumidity, -1, -1, -1, "");
     }
     previousDisplayMillis = currentMillis;
-  }
 }
 
 void fetchWeatherData() {
