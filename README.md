@@ -6,12 +6,13 @@
 <img src="https://github.com/user-attachments/assets/90701727-dd4a-48a8-aab6-b788ed2e8f2a" height="500">
 
 
-
 This project is a WiFi-enabled ESP32 weather station that displays indoor and outdoor temperature and humidity, as well as outdoor air quality (PM2.5 and PM10) and pressure. The ESP32 fetches outdoor data from a local air quality station near my location and displays it on an OLED screen. The device also supports OTA (Over-The-Air) updates, making it easy to deploy updates without requiring a physical connection.
 
 > **Note**: There is also version without Supla integration! Checkout main branch [here](https://github.com/Kacper1263/WiFi-ESP-temp-station-with-OTA-updates/)
 
 > **❗ WARNING ❗**: I highly recommend using PlatformIO with VS Code for this branch. Build with Supla library is taking a lot of Flash space. In Arduino IDE you will need to change partition scheme because sketch is too big for default partition scheme. However, build from PlatformIO is takeing around 92% of Flash memory so you should be fine.
+
+3D printed enclosure: https://makerworld.com/en/models/838882#profileId-784647
 
 ## Features
 
