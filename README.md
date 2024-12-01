@@ -7,6 +7,8 @@ This project is a WiFi-enabled ESP32 weather station that displays indoor and ou
 
 > **Note**: There is also version with Supla integration! Checkout supla branch [here](https://github.com/Kacper1263/WiFi-ESP-temp-station-with-OTA-updates/tree/supla)
 
+3D printed enclosure: https://makerworld.com/en/models/838882#profileId-784647
+
 ## Features
 
 - **WiFi Connectivity**: Connects to a WiFi network using credentials stored in a separate `config.h` file.
