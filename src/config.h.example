@@ -1,2 +1,3 @@
 const char* WIFI_SSID = "SSID";
 const char* WIFI_PASS = "PASSWORD";
+const char* API_URL = "https://inpost.pl/shipx-point-data/{POINT_ID}/{POINT_CODE}/air_index_level"; // replace ID and CODE - you can find it on inpost.pl (DevTools -> Network)

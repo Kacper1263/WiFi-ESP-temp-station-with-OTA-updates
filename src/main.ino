@@ -22,7 +22,7 @@ const unsigned long displayInvertDuration = 5 * 60 * 1000;
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASS;
 
-const String apiUrl = "https://greencity.pl/shipx-point-data/317/KRA357M/air_index_level";
+const String apiUrl = API_URL;
 
 #define DHTPIN 4      // Define the pin connected to the DHT sensor
 #define DHTTYPE DHT22 // Define sensor type (DHT22)
