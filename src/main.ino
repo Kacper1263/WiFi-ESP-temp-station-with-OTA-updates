@@ -3,6 +3,7 @@
 #include <Arduino_JSON.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <config.h> // contains API_URL, WIFI_SSID and WIFI_PASS - create your own config.h from example file
 #include <ArduinoOTA.h>
 
 // Supla
@@ -21,7 +22,7 @@
 #include <supla/sensor/DHT.h>
 
 
-const String apiUrl = "https://greencity.pl/shipx-point-data/317/KRA357M/air_index_level";
+const String apiUrl = API_URL;
 
 #define DHTPIN 4      // Define the pin connected to the DHT sensor
 #define DHTTYPE DHT22 // Define sensor type (DHT22)
